@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sign Up - Fake News Detection System</title>
+
+<style>
+
+/* Animated Gradient Background */
+body{
+margin:0;
+font-family:'Segoe UI',sans-serif;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background: linear-gradient(270deg,#667eea,#00c6ff,#ff6a00);
+background-size:600% 600%;
+animation: bgMove 10s ease infinite;
+}
+
+@keyframes bgMove{
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+}
+
+/* Floating Words */
+.bg-text{
+position:absolute;
+color:white;
+opacity:0.08;
+font-size:40px;
+font-weight:bold;
+animation: float 8s infinite;
+}
+
+.bg-text:nth-child(1){top:10%;left:8%;}
+.bg-text:nth-child(2){top:70%;left:80%;}
+.bg-text:nth-child(3){top:40%;left:60%;}
+.bg-text:nth-child(4){top:80%;left:20%;}
+
+@keyframes float{
+0%{transform:translateY(0);}
+50%{transform:translateY(-25px);}
+100%{transform:translateY(0);}
+}
+
+/* Glass Card */
+.card{
+backdrop-filter: blur(15px);
+background: rgba(255,255,255,0.15);
+padding:40px;
+border-radius:15px;
+width:360px;
+box-shadow:0 8px 32px rgba(0,0,0,0.3);
+color:white;
+text-align:center;
+}
+
+/* Inputs */
+input{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:none;
+border-radius:8px;
+outline:none;
+}
+
+/* Button */
+button{
+width:100%;
+padding:12px;
+background:#ff6a00;
+border:none;
+color:white;
+font-size:16px;
+border-radius:8px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:#ff3c00;
+}
+
+/* Links */
+a{
+color:white;
+}
+
+/* Title */
+h2{
+margin-bottom:10px;
+}
+
+p{
+opacity:0.8;
+font-size:14px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- Background Words -->
+<div class="bg-text">REAL</div>
+<div class="bg-text">FAKE</div>
+<div class="bg-text">TRUTH</div>
+<div class="bg-text">NEWS</div>
+
+<!-- Signup Card -->
+<div class="card">
+
+<h2>Create Account</h2>
+<p>Join to detect fake news intelligently</p>
+
+<form id="signupForm">
+
+<input type="text" id="username" placeholder="Username" required>
+
+<input type="email" id="email" placeholder="Email" required>
+
+<input type="password" id="password" placeholder="Password" required>
+
+<input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+
+<button type="submit">Sign Up</button>
+
+<p style="margin-top:10px;">
+Already have account? <a href="login.html">Login</a>
+</p>
+
+</form>
+
+</div>
+
+<script>
+
+document.getElementById("signupForm").addEventListener("submit", async function(e){
+
+e.preventDefault()
+
+let username = document.getElementById("username").value.trim()
+let email = document.getElementById("email").value.trim()
+let password = document.getElementById("password").value
+let confirm = document.getElementById("confirmPassword").value
+
+// Validation
+let usernamePattern = /^[a-zA-Z0-9]+$/
+if(!usernamePattern.test(username)){
+alert("Username: only letters & numbers (no spaces)")
+return
+}
+
+let emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/
+if(!emailPattern.test(email)){
+alert("Enter valid email")
+return
+}
+
+if(password.length < 6){
+alert("Password must be at least 6 characters")
+return
+}
+
+if(password !== confirm){
+alert("Passwords do not match")
+return
+}
+
+// Send to backend
+let res = await fetch("http://127.0.0.1:5000/signup",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({username,email,password})
+})
+
+let data = await res.json()
+
+if(data.msg=="success"){
+alert("Signup successful")
+window.location.href="login.html"
+}else{
+alert("User already exists")
+}
+
+})
+
+</script>
+
+</body>
+</html>
