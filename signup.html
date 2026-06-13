@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up — Fake News Detection</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="auth-page">
+  <div class="card">
+
+    <span class="card-icon">✨</span>
+    <h2>Create Account</h2>
+    <p class="subtitle">Join Fake News Detection and fight misinformation</p>
+
+    <div class="input-group">
+      <label>Username</label>
+      <span class="input-icon">👤</span>
+      <input id="username" type="text" placeholder="Choose a username"/>
+    </div>
+
+    <div class="input-group">
+      <label>Email Address</label>
+      <span class="input-icon">📧</span>
+      <input id="email" type="email" placeholder="your@email.com"/>
+    </div>
+
+    <div class="input-group">
+      <label>Password</label>
+      <span class="input-icon">🔑</span>
+      <input id="password" type="password" placeholder="Create a strong password"/>
+    </div>
+
+    <div id="errMsg" style="color:#f87171;font-size:13px;margin:2px 0 10px;display:none;text-align:left;padding:10px 12px;background:rgba(239,68,68,0.08);border-radius:8px;border:1px solid rgba(239,68,68,0.2);"></div>
+    <div id="okMsg"  style="color:#4ade80;font-size:13px;margin:2px 0 10px;display:none;text-align:left;padding:10px 12px;background:rgba(34,197,94,0.08);border-radius:8px;border:1px solid rgba(34,197,94,0.2);"></div>
+
+    <button class="btn-primary btn" id="signupBtn" onclick="signup()">Create Account →</button>
+
+    <div class="card-footer">
+      Already have an account? &nbsp;<a href="/login">Sign in</a>
+    </div>
+    <div class="card-footer">
+      <a href="/">← Back to Home</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function signup(){
+  const btn = document.getElementById("signupBtn")
+  const err = document.getElementById("errMsg")
+  const ok  = document.getElementById("okMsg")
+  err.style.display = "none"
+  ok.style.display  = "none"
+  btn.textContent   = "Creating account..."
+  btn.disabled      = true
+
+  try {
+    const res  = await fetch("/signup_api", {
+      method:  "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        username: document.getElementById("username").value,
+        email:    document.getElementById("email").value,
+        password: document.getElementById("password").value
+      })
+    })
+    const data = await res.json()
+    if(data.msg === "success"){
+      ok.textContent = "✅ Account created! Redirecting to login..."
+      ok.style.display = "block"
+      setTimeout(() => window.location.href = "/login", 1500)
+    } else {
+      err.textContent = "⚠️ Username already exists. Please choose another."
+      err.style.display = "block"
+      btn.textContent   = "Create Account →"
+      btn.disabled      = false
+    }
+  } catch(e){
+    err.textContent = "⚠️ Connection error. Please try again."
+    err.style.display = "block"
+    btn.textContent   = "Create Account →"
+    btn.disabled      = false
+  }
+}
+
+document.addEventListener("keydown", e => { if(e.key === "Enter") signup() })
+</script>
+
+</body>
+</html>

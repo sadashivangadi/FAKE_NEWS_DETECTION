@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — Fake News Detection</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="auth-page">
+  <div class="card">
+
+    <span class="card-icon">🔐</span>
+    <h2>Welcome Back</h2>
+    <p class="subtitle">Sign in to your Fake News Detection account</p>
+
+    <div class="input-group">
+      <label>Username</label>
+      <span class="input-icon">👤</span>
+      <input id="username" type="text" placeholder="Enter your username"/>
+    </div>
+
+    <div class="input-group">
+      <label>Password</label>
+      <span class="input-icon">🔑</span>
+      <input id="password" type="password" placeholder="Enter your password"/>
+    </div>
+
+    <div id="errMsg" style="color:#f87171;font-size:13px;margin:2px 0 10px;display:none;text-align:left;padding:10px 12px;background:rgba(239,68,68,0.08);border-radius:8px;border:1px solid rgba(239,68,68,0.2);"></div>
+
+    <button class="btn-primary btn" id="loginBtn" onclick="login()">Sign In →</button>
+
+    <div class="card-footer">
+      Don't have an account? &nbsp;<a href="/signup">Create one</a>
+    </div>
+    <div class="card-footer">
+      <a href="/">← Back to Home</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function login(){
+  const btn = document.getElementById("loginBtn")
+  const err = document.getElementById("errMsg")
+  err.style.display = "none"
+  btn.textContent   = "Signing in..."
+  btn.disabled      = true
+
+  try {
+    const res  = await fetch("/login_api", {
+      method:  "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value
+      })
+    })
+    const data = await res.json()
+    if(data.msg === "success"){
+      window.location.href = "/index"
+    } else {
+      err.textContent = "⚠️ Invalid username or password."
+      err.style.display = "block"
+      btn.textContent = "Sign In →"
+      btn.disabled = false
+    }
+  } catch(e){
+    err.textContent = "⚠️ Connection error. Please try again."
+    err.style.display = "block"
+    btn.textContent = "Sign In →"
+    btn.disabled = false
+  }
+}
+
+document.addEventListener("keydown", e => { if(e.key === "Enter") login() })
+</script>
+
+</body>
+</html>

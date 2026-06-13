@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fake News Detection System</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="dashboard">
+
+  <!-- ═══════ TOP NAV ═══════ -->
+  <nav class="top-nav">
+    <div class="nav-logo">
+      <span class="nav-logo-icon">🛡️</span>
+      Fake News Detection System
+    </div>
+    <span class="nav-tagline">AI-Powered · Real-Time Analysis</span>
+    <div class="nav-actions">
+      <button class="btn-ghost" onclick="window.location.href='/'">🏠 Home</button>
+      <button class="btn-ghost" onclick="window.location.href='/login'">🔐 Login</button>
+    </div>
+  </nav>
+
+  <!-- ═══════ SEARCH ═══════ -->
+  <section class="glass-card search-section">
+
+    <h3 class="section-title">🔍 Search News Headlines</h3>
+
+    <div class="filter-tabs">
+      <button class="tab active" data-filter="all"  onclick="setFilter(this)">All News</button>
+      <button class="tab"        data-filter="real" onclick="setFilter(this)">✅ Real News</button>
+      <button class="tab"        data-filter="fake" onclick="setFilter(this)">❌ Fake News</button>
+    </div>
+
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Search a news headline to find matching examples..."
+        autocomplete="off"
+        oninput="onSearchInput()"
+        onkeydown="onSearchKey(event)"
+      />
+      <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
+    </div>
+
+    <div class="dropdown" id="dropdown"></div>
+
+  </section>
+
+  <!-- ═══════ ANALYZER ═══════ -->
+  <section class="glass-card">
+
+    <h3 class="section-title">🧠 Fake News Analyzer</h3>
+
+    <textarea
+      id="newsText"
+      class="analyzer-textarea"
+      placeholder="Paste or type a full news headline or article here...&#10;&#10;The AI model will analyze the content and tell you whether it is REAL or FAKE news, with a confidence score."
+      rows="10"
+    ></textarea>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <button class="analyze-btn btn" onclick="analyze()" style="flex:1;min-width:200px;">
+        ⚡ &nbsp; Analyze News
+      </button>
+      <button class="btn-ghost" onclick="clearAnalyzer()" style="padding:17px 24px;font-size:14px;">
+        🗑️ Clear
+      </button>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader" style="display:none;">
+      <div class="spinner"></div>
+      <span>Analyzing with AI model...</span>
+    </div>
+
+    <!-- Result -->
+    <div class="result-box" id="resultBox" style="display:none;">
+      <div class="result-icon-wrap" id="resultIconWrap">
+        <span id="resultIcon"></span>
+      </div>
+      <div style="flex:1;">
+        <div class="result-label" id="resultLabel"></div>
+        <div class="result-conf" id="resultConf">
+          <span id="confText"></span>
+          <div class="conf-bar-wrap" id="confBarWrap" style="display:none;">
+            <div class="conf-bar" id="confBar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════ TRENDING ═══════ -->
+  <section class="glass-card">
+
+    <h3 class="section-title">📈 Trending News Examples</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;margin-top:-10px;">Click any headline to auto-fill the analyzer above.</p>
+
+    <div class="trending-grid">
+      <div>
+        <div class="trend-header real-header">✅ Real News Headlines</div>
+        <ul class="trend-list" id="realList">
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+        </ul>
+      </div>
+      <div>
+        <div class="trend-header fake-header">❌ Fake News Headlines</div>
+        <ul class="trend-list" id="fakeList">
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+          <li class="trend-skeleton"></li>
+        </ul>
+      </div>
+    </div>
+
+  </section>
+
+</div><!-- /dashboard -->
+
+<script>
+/* ── STATE ── */
+let activeFilter   = "all"
+let selectedIndex  = -1
+let searchDebounce = null
+
+/* ── FILTER TABS ── */
+function setFilter(btn){
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
+  btn.classList.add("active")
+  activeFilter = btn.dataset.filter
+  onSearchInput()
+}
+
+/* ── SEARCH ── */
+function onSearchInput(){
+  const q = document.getElementById("searchInput").value.trim()
+  document.getElementById("searchClear").style.opacity = q ? "1" : "0"
+  clearTimeout(searchDebounce)
+  if(!q){ closeDropdown(); return }
+  searchDebounce = setTimeout(() => fetchSuggestions(q), 200)
+}
+
+function clearSearch(){
+  document.getElementById("searchInput").value = ""
+  document.getElementById("searchClear").style.opacity = "0"
+  closeDropdown()
+}
+
+function onSearchKey(e){
+  const dd    = document.getElementById("dropdown")
+  const items = dd.querySelectorAll(".dd-item")
+  if(e.key === "ArrowDown"){
+    e.preventDefault()
+    selectedIndex = Math.min(selectedIndex + 1, items.length - 1)
+    highlight(items)
+  } else if(e.key === "ArrowUp"){
+    e.preventDefault()
+    selectedIndex = Math.max(selectedIndex - 1, 0)
+    highlight(items)
+  } else if(e.key === "Enter"){
+    if(selectedIndex >= 0 && items[selectedIndex]) pickSuggestion(items[selectedIndex].dataset.text)
+    else closeDropdown()
+  } else if(e.key === "Escape"){
+    closeDropdown()
+  }
+}
+
+function highlight(items){
+  items.forEach((it, i) => it.classList.toggle("kbd-active", i === selectedIndex))
+  if(items[selectedIndex]) items[selectedIndex].scrollIntoView({block:"nearest"})
+}
+
+async function fetchSuggestions(q){
+  try {
+    const res  = await fetch(`/search?q=${encodeURIComponent(q)}&filter=${activeFilter}&limit=8`)
+    const data = await res.json()
+    renderDropdown(data.results, q)
+  } catch(e){ closeDropdown() }
+}
+
+function renderDropdown(results, query){
+  const dd = document.getElementById("dropdown")
+  selectedIndex = -1
+
+  if(!results.length){
+    dd.innerHTML = `<div class="dd-empty">No similar news found. Please enter your own news text in the Analyzer below.</div>`
+    dd.classList.add("open")
+    return
+  }
+
+  dd.innerHTML = results.map(r => {
+    const badge = r.label === "real"
+      ? `<span class="badge badge-real">✅ Real</span>`
+      : `<span class="badge badge-fake">❌ Fake</span>`
+    const hi = r.text.replace(new RegExp(`(${escReg(query)})`, "gi"), `<mark>$1</mark>`)
+    return `<div class="dd-item" data-text="${escAttr(r.text)}" onclick="pickSuggestion(this.dataset.text)">
+              ${badge}<span style="flex:1;line-height:1.5;">${hi}</span>
+            </div>`
+  }).join("")
+  dd.classList.add("open")
+}
+
+function closeDropdown(){
+  const dd = document.getElementById("dropdown")
+  dd.classList.remove("open")
+  dd.innerHTML = ""
+  selectedIndex = -1
+}
+
+function pickSuggestion(text){
+  fillAnalyzer(text)
+  document.getElementById("searchInput").value = text.substring(0, 60) + (text.length > 60 ? "…" : "")
+  closeDropdown()
+}
+
+document.addEventListener("click", e => {
+  if(!e.target.closest(".search-section")) closeDropdown()
+})
+
+/* ── FILL ANALYZER ── */
+function fillAnalyzer(text){
+  document.getElementById("newsText").value = text
+  document.getElementById("resultBox").style.display = "none"
+  document.getElementById("newsText").scrollIntoView({behavior:"smooth", block:"center"})
+}
+
+function clearAnalyzer(){
+  document.getElementById("newsText").value = ""
+  document.getElementById("resultBox").style.display = "none"
+  document.getElementById("loader").style.display    = "none"
+}
+
+/* ── TRENDING ── */
+async function loadTrending(){
+  try {
+    const res  = await fetch("/trending")
+    const data = await res.json()
+    renderList("realList", data.real, "real")
+    renderList("fakeList", data.fake, "fake")
+  } catch(e){}
+}
+
+function renderList(id, items, type){
+  const el = document.getElementById(id)
+  if(!items || !items.length){
+    el.innerHTML = `<li class="trend-empty">No examples available</li>`; return
+  }
+  el.innerHTML = items.map(t =>
+    `<li class="trend-item trend-${type}" onclick="fillAnalyzer(${JSON.stringify(t)})">${t}</li>`
+  ).join("")
+}
+
+/* ── ANALYZE ── */
+async function analyze(){
+  const text   = document.getElementById("newsText").value.trim()
+  const loader = document.getElementById("loader")
+  const box    = document.getElementById("resultBox")
+
+  if(!text){
+    showResult("warn", "⚠️", "Please enter a news headline or article first.", "", 0)
+    return
+  }
+
+  box.style.display    = "none"
+  loader.style.display = "flex"
+
+  try {
+    const res  = await fetch("/predict", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({news: text})
+    })
+    const data = await res.json()
+    const conf = data.confidence || 0
+    if(data.result === "real"){
+      showResult("real", "✅", "REAL NEWS", `AI Confidence: ${conf}%`, conf)
+    } else {
+      showResult("fake", "❌", "FAKE NEWS", `AI Confidence: ${conf}%`, conf)
+    }
+  } catch(e){
+    showResult("warn", "⚠️", "Error — please try again.", "", 0)
+  } finally {
+    loader.style.display = "none"
+  }
+}
+
+function showResult(type, icon, label, conf, confVal){
+  const box     = document.getElementById("resultBox")
+  const barWrap = document.getElementById("confBarWrap")
+  const bar     = document.getElementById("confBar")
+
+  box.className = `result-box ${type}-result`
+  document.getElementById("resultIcon").textContent  = icon
+  document.getElementById("resultLabel").textContent = label
+  document.getElementById("confText").textContent    = conf
+
+  if(confVal > 0){
+    barWrap.style.display = "block"
+    setTimeout(() => bar.style.width = confVal + "%", 60)
+  } else {
+    barWrap.style.display = "none"
+    bar.style.width = "0%"
+  }
+
+  box.style.display = "flex"
+  box.scrollIntoView({behavior:"smooth", block:"nearest"})
+}
+
+/* ── UTILS ── */
+function escReg(s)  { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") }
+function escAttr(s) { return s.replace(/"/g, "&quot;").replace(/'/g, "&#39;") }
+
+/* ── INIT ── */
+loadTrending()
+</script>
+
+</body>
+</html>
